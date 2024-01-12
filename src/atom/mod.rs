@@ -1,5 +1,6 @@
 mod float;
 mod integer;
+mod string;
 
 #[derive(Debug, PartialEq)]
 pub enum AtomType {

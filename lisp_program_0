@@ -1,0 +1,5 @@
+(setq x 10)
+(setq y 34.567)
+(setq ch nil)
+(setq n 123.78)
+(setq r 124/2)

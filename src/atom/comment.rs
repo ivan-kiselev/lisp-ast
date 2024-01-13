@@ -3,7 +3,6 @@ use nom::{
     bytes::complete::{tag, take_until},
     character::complete::{multispace0, not_line_ending},
     combinator::value,
-    multi::many0,
     sequence::{delimited, tuple},
     IResult,
 };
@@ -28,12 +27,8 @@ fn parse_multiline_comment(input: &str) -> IResult<&str, AtomType> {
         multispace0,
     )(input)
 }
-pub fn parse_comment(input: &str) -> IResult<&str, AtomType> {
+pub fn parse(input: &str) -> IResult<&str, AtomType> {
     alt((parse_multiline_comment, parse_single_line_comment))(input)
-}
-
-pub fn parse0(input: &str) -> IResult<&str, Vec<AtomType>> {
-    many0(parse_comment)(input)
 }
 
 #[cfg(test)]
@@ -76,17 +71,8 @@ mod tests {
         AtomType::Null,
         parse_multiline_comment
     )]
-    #[case(r#";; comment"#, "", AtomType::Null, parse_comment)]
-    #[case(r#"#| comment |#"#, "", AtomType::Null, parse_comment)]
-    #[case(r#"#| comment |#"#, "", vec![AtomType::Null], parse0)]
-    #[case(r#";; comment |#"#, "", vec![AtomType::Null], parse0)]
-    #[case(r#";; comment 
-    #|
-    another comment |#
-    
-    
-    "#, "", vec![AtomType::Null, AtomType::Null], parse0)]
-
+    #[case(r#";; comment"#, "", AtomType::Null, parse)]
+    #[case(r#"#| comment |#"#, "", AtomType::Null, parse)]
     fn generic_test<I, R, P, E>(
         #[case] input: I,
         #[case] rest_expected: I,
@@ -101,5 +87,12 @@ mod tests {
         let (rest_got, atoms_got) = parser(input).unwrap();
         assert_eq!(rest_got, rest_expected);
         assert_eq!(atoms_got, atoms_expected);
+    }
+
+    #[rstest]
+    #[case("(;; comment)")]
+    #[case("(#| comment |#)")]
+    fn test_err(#[case] input: &str) {
+        assert!(parse(input).is_err())
     }
 }

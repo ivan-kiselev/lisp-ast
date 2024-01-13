@@ -7,7 +7,7 @@ use nom::{
     IResult,
 };
 
-fn parse(input: &str) -> IResult<&str, AtomType> {
+pub fn parse(input: &str) -> IResult<&str, AtomType> {
     let (input, (_, opt_sign, whole_part_str, _, fract_part_str, _)) = tuple((
         multispace0,
         opt(alt((char('-'), char('+')))),
@@ -52,7 +52,6 @@ mod tests {
         "something_else",
         AtomType::Float(42.42)
     )]
-
     fn parse_float(
         #[case] input: &str,
         #[case] rest_expected: &str,
@@ -61,5 +60,14 @@ mod tests {
         let (rest_got, atom_got) = parse(input).unwrap();
         assert_eq!(rest_got, rest_expected);
         assert_eq!(atom_got, atom_expected);
+    }
+
+    #[rstest]
+    #[case("()")]
+    #[case("42")]
+    #[case("(42)")]
+    #[case("(42.)")]
+    fn parse_float_err(#[case] input: &str) {
+        assert!(parse(input).is_err());
     }
 }

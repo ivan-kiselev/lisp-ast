@@ -50,4 +50,11 @@ mod tests {
         assert_eq!(rest_got, rest_expected);
         assert_eq!(atom_got, atom_expected);
     }
+
+    #[rstest]
+    #[case(r#"(":")""#)]
+    #[case(r#"("")""#)]
+    fn test_err(#[case] input: &str) {
+        assert!(parse(input).is_err())
+    }
 }

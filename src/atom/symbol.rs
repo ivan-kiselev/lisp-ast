@@ -25,7 +25,7 @@ fn parse_arithmetics(input: &str) -> IResult<&str, AtomType> {
     delimited(
         multispace0,
         alt((tag("+"), tag("*"), tag("/"), tag("-"))),
-        multispace1,
+        multispace0,
     )(input)
     .map(|(i, o)| (i, AtomType::Symbol(o.to_string())))
 }
@@ -57,10 +57,6 @@ pub fn parse(input: &str) -> IResult<&str, AtomType> {
     alt((parse_arithmetics, parse_global_vars, parse_regular_symbols))(input)
 }
 
-pub fn parse0(input: &str) -> IResult<&str, Vec<AtomType>> {
-    many0(parse)(input)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,6 +70,8 @@ mod tests {
     #[case("-42", parse_arithmetics)]
     #[case("42", parse_arithmetics)]
     #[case("42", parse_regular_symbols)]
+    #[case("(symbol)", parse_regular_symbols)]
+    #[case("(+)", parse_regular_symbols)]
     fn generic_error_test<I, R, E, P>(#[case] input: I, #[case] parser: P)
     where
         I: std::cmp::PartialEq + std::fmt::Debug,
@@ -91,22 +89,6 @@ mod tests {
     }
 
     #[rstest]
-    #[case("my_func       *my_var*    another-var", "", vec![
-        AtomType::Symbol("my_func".to_string()),
-        AtomType::Symbol("*my_var*".to_string()),
-        AtomType::Symbol("another-var".to_string())
-      ],
-      parse0
-    )]
-    #[case(r#"my_func    
-       *my_var*  
-         another-var"#, "", vec![
-      AtomType::Symbol("my_func".to_string()),
-      AtomType::Symbol("*my_var*".to_string()),
-      AtomType::Symbol("another-var".to_string())
-    ],
-    parse0
-  )]
     #[case(" *global-var* another_input", "another_input", AtomType::Symbol("*global-var*".to_string()),parse_global_vars)]
     #[case("*global_var* another_input", "another_input", AtomType::Symbol("*global_var*".to_string()), parse_global_vars)]
     #[case("/ 4 2", "4 2", AtomType::Symbol("/".to_string()), parse_arithmetics)]
@@ -124,6 +106,7 @@ mod tests {
     #[case("- 4 1", "4 1", AtomType::Symbol("-".to_string()), parse)]
     #[case("*global_var*", "", AtomType::Symbol("*global_var*".to_string()),parse)]
     #[case("my_func 42 -21", "42 -21", AtomType::Symbol("my_func".to_string()),parse)]
+    #[case("/2", "2", AtomType::Symbol("/".to_string()),parse)]
     fn generic_test<I, R, P, E>(
         #[case] input: I,
         #[case] rest_expected: I,

@@ -59,144 +59,85 @@ pub fn parse0(input: &str) -> IResult<&str, Vec<AtomType>> {
     let (input, symbol) = many0(parse)(input)?;
     Ok((input, symbol))
 }
+
 #[cfg(test)]
 mod tests {
+    use std::fmt::Display;
+
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn global_vars() {
-        let input = " *global-var* another_input";
-        let (rest, atom) = parse_global_vars(input).unwrap();
-        assert_eq!(rest, "another_input");
-        assert_eq!(atom, AtomType::Symbol("*global-var*".to_string()));
-        let input = "*global_var* another_input";
-        let (rest, atom) = parse_global_vars(input).unwrap();
-        assert_eq!(rest, "another_input");
-        assert_eq!(atom, AtomType::Symbol("*global_var*".to_string()));
-
-        let input = "**";
-        assert!(parse_global_vars(input).is_err());
-    }
-    #[test]
-    fn arithmetics() {
-        let input = "/ 4 2";
-        let (rest, atom) = parse_arithmetics(input).unwrap();
-        assert_eq!(rest, "4 2");
-        assert_eq!(atom, AtomType::Symbol("/".to_string()));
-        let input = "* 4 2";
-        let (rest, atom) = parse_arithmetics(input).unwrap();
-        assert_eq!(rest, "4 2");
-        assert_eq!(atom, AtomType::Symbol("*".to_string()));
-        let input = "- 4 2";
-        let (rest, atom) = parse_arithmetics(input).unwrap();
-        assert_eq!(rest, "4 2");
-        assert_eq!(atom, AtomType::Symbol("-".to_string()));
-        let input = "+ 4 2";
-        let (rest, atom) = parse_arithmetics(input).unwrap();
-        assert_eq!(rest, "4 2");
-        assert_eq!(atom, AtomType::Symbol("+".to_string()));
-    }
-    #[test]
-    fn arithmetics_dont_parse_global_vars() {
-        let input = "*my_var*";
-        assert!(parse_arithmetics(input).is_err());
-    }
-    #[test]
-    fn arithmetics_dont_parse_negative_and_positive_numbers() {
-        let input = "-42";
-        assert!(parse_arithmetics(input).is_err());
-        let input = "+42";
-        assert!(parse_arithmetics(input).is_err());
+    #[rstest]
+    #[case(" ** another_input", parse_global_vars)]
+    #[case("**another_input", parse_global_vars)]
+    #[case("**", parse_global_vars)]
+    #[case("*my_var*", parse_arithmetics)]
+    #[case("-42", parse_arithmetics)]
+    #[case("42", parse_arithmetics)]
+    #[case("42", parse_regular_symbols)]
+    fn generic_error_test<I, R, E, P>(#[case] input: I, #[case] parser: P)
+    where
+        I: std::cmp::PartialEq + std::fmt::Debug,
+        R: std::cmp::PartialEq + std::fmt::Debug,
+        E: std::fmt::Debug,
+        P: Fn(I) -> IResult<I, R, E>,
+    {
+        assert!(parser(input).is_err());
     }
 
-    #[test]
-    fn regular_symbols() {
-        let input = "a";
-        let (rest, atom) = parse_regular_symbols(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Symbol("a".to_string()));
-        let input = " a ";
-        let (rest, atom) = parse_regular_symbols(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Symbol("a".to_string()));
-        let input = "a1";
-        let (rest, atom) = parse_regular_symbols(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Symbol("a1".to_string()));
-        let input = "my-func";
-        let (rest, atom) = parse_regular_symbols(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Symbol("my-func".to_string()));
-        let input = "my-func +42";
-        let (rest, atom) = parse_regular_symbols(input).unwrap();
-        assert_eq!(rest, "+42");
-        assert_eq!(atom, AtomType::Symbol("my-func".to_string()));
-        let input = "addition_function 42 -32";
-        let (rest, atom) = parse_regular_symbols(input).unwrap();
-        assert_eq!(rest, "42 -32");
-        assert_eq!(atom, AtomType::Symbol("addition_function".to_string()));
-    }
     #[test]
     fn regular_symbols_dont_parse_numbers() {
         let input = "42";
         assert!(parse_regular_symbols(input).is_err());
     }
 
-    #[test]
-    fn test_combinator() {
-        let input = "a";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Symbol("a".to_string()));
-        let input = "+ 3 1";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "3 1");
-        assert_eq!(atom, AtomType::Symbol("+".to_string()));
-        let input = "- 4 1";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "4 1");
-        assert_eq!(atom, AtomType::Symbol("-".to_string()));
-        let input = "*global_var*";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Symbol("*global_var*".to_string()));
-        let input = "my_func";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Symbol("my_func".to_string()));
-        let input = "my-func +42";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "+42");
-        assert_eq!(atom, AtomType::Symbol("my-func".to_string()));
-        let input = "addition_function 42 -32";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "42 -32");
-        assert_eq!(atom, AtomType::Symbol("addition_function".to_string()));
-    }
-
-    #[test]
-    fn test_combinator0() {
-        let input = "my_func *my_var* another-var";
-        let (rest, atoms) = parse0(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(
-            atoms,
-            vec![
-                AtomType::Symbol("my_func".to_string()),
-                AtomType::Symbol("*my_var*".to_string()),
-                AtomType::Symbol("another-var".to_string())
-            ]
-        );
-        let input = "    my_func       *my_var*           another-var";
-        let (rest, atoms) = parse0(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(
-            atoms,
-            vec![
-                AtomType::Symbol("my_func".to_string()),
-                AtomType::Symbol("*my_var*".to_string()),
-                AtomType::Symbol("another-var".to_string())
-            ]
-        );
+    #[rstest]
+    #[case("my_func       *my_var*    another-var", "", vec![
+        AtomType::Symbol("my_func".to_string()),
+        AtomType::Symbol("*my_var*".to_string()),
+        AtomType::Symbol("another-var".to_string())
+      ],
+      parse0
+    )]
+    #[case(r#"my_func    
+       *my_var*  
+         another-var"#, "", vec![
+      AtomType::Symbol("my_func".to_string()),
+      AtomType::Symbol("*my_var*".to_string()),
+      AtomType::Symbol("another-var".to_string())
+    ],
+    parse0
+  )]
+    #[case(" *global-var* another_input", "another_input", AtomType::Symbol("*global-var*".to_string()),parse_global_vars)]
+    #[case("*global_var* another_input", "another_input", AtomType::Symbol("*global_var*".to_string()), parse_global_vars)]
+    #[case("/ 4 2", "4 2", AtomType::Symbol("/".to_string()), parse_arithmetics)]
+    #[case("* 4 2", "4 2", AtomType::Symbol("*".to_string()), parse_arithmetics)]
+    #[case("- 4 2", "4 2", AtomType::Symbol("-".to_string()), parse_arithmetics)]
+    #[case("+ 4 2", "4 2", AtomType::Symbol("+".to_string()), parse_arithmetics)]
+    #[case("   +      4 2", "4 2", AtomType::Symbol("+".to_string()), parse_arithmetics)]
+    #[case("a", "", AtomType::Symbol("a".to_string()), parse_regular_symbols)]
+    #[case(" a ", "", AtomType::Symbol("a".to_string()), parse_regular_symbols)]
+    #[case("a1", "", AtomType::Symbol("a1".to_string()), parse_regular_symbols)]
+    #[case("my-func +42", "+42", AtomType::Symbol("my-func".to_string()), parse_regular_symbols)]
+    #[case("addition_function 42 -21", "42 -21", AtomType::Symbol("addition_function".to_string()), parse_regular_symbols)]
+    #[case("a", "", AtomType::Symbol("a".to_string()), parse)]
+    #[case("+ 3 1", "3 1", AtomType::Symbol("+".to_string()),parse)]
+    #[case("- 4 1", "4 1", AtomType::Symbol("-".to_string()), parse)]
+    #[case("*global_var*", "", AtomType::Symbol("*global_var*".to_string()),parse)]
+    #[case("my_func 42 -21", "42 -21", AtomType::Symbol("my_func".to_string()),parse)]
+    fn generic_test<I, R, P, E>(
+        #[case] input: I,
+        #[case] rest_expected: I,
+        #[case] atoms_expected: R,
+        #[case] parser: P,
+    ) where
+        I: std::cmp::PartialEq + std::fmt::Debug,
+        R: std::cmp::PartialEq + std::fmt::Debug,
+        E: std::fmt::Debug,
+        P: Fn(I) -> IResult<I, R, E>,
+    {
+        let (rest_got, atoms_got) = parser(input).unwrap();
+        assert_eq!(rest_got, rest_expected);
+        assert_eq!(atoms_got, atoms_expected);
     }
 }

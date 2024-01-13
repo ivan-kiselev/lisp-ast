@@ -8,14 +8,18 @@ use nom::{
 };
 
 fn parse(input: &str) -> IResult<&str, AtomType> {
-    let (input, (_, opt_sign, integer_str)) = tuple((
-        multispace0,                      // Match and discard leading whitespace
-        opt(alt((char('-'), char('+')))), // Optionally match '-' or '+'
-        digit1,                           // Match one or more digits
+    let (input, (_, opt_sign, integer_str, _)) = tuple((
+        multispace0,
+        opt(alt((char('-'), char('+')))),
+        digit1,
+        multispace0,
     ))(input)?;
 
-    let formatted_integer = format!("{}{}", opt_sign.unwrap_or(' '), integer_str);
-    let formatted_integer = formatted_integer.trim();
+    let formatted_integer = format!(
+        "{}{}",
+        opt_sign.map(String::from).unwrap_or_default(),
+        integer_str
+    );
 
     match formatted_integer.parse::<i64>() {
         Ok(number) => Ok((input, AtomType::Integer(number))),
@@ -28,29 +32,28 @@ fn parse(input: &str) -> IResult<&str, AtomType> {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
-    #[test]
-    fn parse_int() {
-        let input = "+42";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Integer(42));
-        let input = "-42";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Integer(-42));
-        let input = "42";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Integer(42));
-        let input = " 42";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Integer(42));
-        let input = " -42";
-        let (rest, atom) = parse(input).unwrap();
-        assert_eq!(rest, "");
-        assert_eq!(atom, AtomType::Integer(-42));
+    #[rstest]
+    #[case("42", "", AtomType::Integer(42))]
+    #[case("-42", "", AtomType::Integer(-42))]
+    #[case(" 42", "", AtomType::Integer(42))]
+    #[case(" -42", "", AtomType::Integer(-42))]
+    #[case("+42", "", AtomType::Integer(42))]
+    #[case(
+        "      +42                            something_else",
+        "something_else",
+        AtomType::Integer(42)
+    )]
+    fn parse_int(
+        #[case] input: &str,
+        #[case] rest_expected: &str,
+        #[case] atom_expected: AtomType,
+    ) {
+        let (rest_got, atom_got) = parse(input).unwrap();
+        assert_eq!(rest_got, rest_expected);
+        assert_eq!(atom_got, atom_expected);
     }
 }

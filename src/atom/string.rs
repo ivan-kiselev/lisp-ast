@@ -44,7 +44,6 @@ mod tests {
         assert_eq!(rest, "");
         assert_eq!(atom, AtomType::String("$?!@#_:;;".to_string()));
         let input = r#""\"""#;
-        print!("\n{}\n", input);
         let (rest, atom) = parse(input).unwrap();
         assert_eq!(rest, "");
         assert_eq!(atom, AtomType::String(r#"\""#.to_string()));

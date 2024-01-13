@@ -17,7 +17,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_multioline_comment() {
+    fn multiline_comment() {
         let input = r#"#|
          Comment
          Commnet

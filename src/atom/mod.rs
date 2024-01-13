@@ -2,6 +2,7 @@ mod comment;
 mod float;
 mod integer;
 mod string;
+mod symbol;
 
 #[derive(Debug, PartialEq)]
 pub enum AtomType {
@@ -9,5 +10,4 @@ pub enum AtomType {
     Float(f64),
     Symbol(String),
     String(String),
-    Char(char),
 }

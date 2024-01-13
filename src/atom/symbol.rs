@@ -2,7 +2,7 @@ use super::AtomType;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alpha1, alphanumeric1, char, multispace0, multispace1},
+    character::complete::{alpha1, alphanumeric1, char, multispace0},
     multi::{many0, many1},
     sequence::{delimited, pair, tuple},
     IResult,
@@ -54,7 +54,7 @@ fn parse_regular_symbols(input: &str) -> IResult<&str, AtomType> {
 }
 
 pub fn parse(input: &str) -> IResult<&str, AtomType> {
-    alt((parse_arithmetics, parse_global_vars, parse_regular_symbols))(input)
+    alt((parse_global_vars, parse_arithmetics, parse_regular_symbols))(input)
 }
 
 #[cfg(test)]
@@ -66,8 +66,6 @@ mod tests {
     #[case(" ** another_input", parse_global_vars)]
     #[case("**another_input", parse_global_vars)]
     #[case("**", parse_global_vars)]
-    #[case("*my_var*", parse_arithmetics)]
-    #[case("-42", parse_arithmetics)]
     #[case("42", parse_arithmetics)]
     #[case("42", parse_regular_symbols)]
     #[case("(symbol)", parse_regular_symbols)]

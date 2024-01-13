@@ -1,7 +1,7 @@
 use nom::{
-    bytes::complete::{is_not, tag, take_until},
+    bytes::complete::{tag, take_until},
     combinator::value,
-    sequence::{pair, tuple},
+    sequence::tuple,
     IResult,
 };
 

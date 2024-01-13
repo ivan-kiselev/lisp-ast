@@ -10,5 +10,4 @@ pub enum AtomType {
     Symbol(String),
     String(String),
     Char(char),
-    OneLineComment(String),
 }

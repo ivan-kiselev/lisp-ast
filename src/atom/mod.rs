@@ -4,10 +4,11 @@ mod integer;
 mod string;
 mod symbol;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AtomType {
     Integer(i64),
     Float(f64),
     Symbol(String),
     String(String),
+    Null,
 }

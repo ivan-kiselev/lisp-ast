@@ -9,7 +9,7 @@ use nom::{
 };
 
 fn parse_global_vars(input: &str) -> IResult<&str, AtomType> {
-    let (input, (_, symbol, _)) = delimited(
+    delimited(
         multispace0,
         tuple((
             char('*'),
@@ -17,53 +17,52 @@ fn parse_global_vars(input: &str) -> IResult<&str, AtomType> {
             char('*'),
         )),
         multispace0,
-    )(input)?;
-    Ok((input, AtomType::Symbol(format!("*{}*", symbol.concat()))))
+    )(input)
+    .map(|(input, (_, symbol, _))| (input, AtomType::Symbol(format!("*{}*", symbol.concat()))))
 }
 
 fn parse_arithmetics(input: &str) -> IResult<&str, AtomType> {
-    let (input, symbol) = delimited(
+    delimited(
         multispace0,
         alt((tag("+"), tag("*"), tag("/"), tag("-"))),
         multispace1,
-    )(input)?;
-    Ok((input, AtomType::Symbol(symbol.to_string())))
+    )(input)
+    .map(|(i, o)| (i, AtomType::Symbol(o.to_string())))
 }
 
 fn parse_regular_symbols(input: &str) -> IResult<&str, AtomType> {
-    let (input, (first_ch_of_symbol_name, rest_chars_of_symbol_name)) = delimited(
+    delimited(
         multispace0,
         pair(
             alpha1,
             many0(alt((alphanumeric1, tag("-"), tag("_"), tag("*")))),
         ),
         multispace0,
-    )(input)?;
-    Ok((
-        input,
-        AtomType::Symbol(format!(
-            "{}{}",
-            first_ch_of_symbol_name,
-            rest_chars_of_symbol_name.concat()
-        )),
-    ))
+    )(input)
+    .map(
+        |(input, (first_ch_of_symbol_name, rest_chars_of_symbol_name))| {
+            (
+                input,
+                AtomType::Symbol(format!(
+                    "{}{}",
+                    first_ch_of_symbol_name,
+                    rest_chars_of_symbol_name.concat()
+                )),
+            )
+        },
+    )
 }
 
 pub fn parse(input: &str) -> IResult<&str, AtomType> {
-    let (input, symbol) =
-        alt((parse_arithmetics, parse_global_vars, parse_regular_symbols))(input)?;
-    Ok((input, symbol))
+    alt((parse_arithmetics, parse_global_vars, parse_regular_symbols))(input)
 }
 
 pub fn parse0(input: &str) -> IResult<&str, Vec<AtomType>> {
-    let (input, symbol) = many0(parse)(input)?;
-    Ok((input, symbol))
+    many0(parse)(input)
 }
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::Display;
-
     use super::*;
     use rstest::rstest;
 
